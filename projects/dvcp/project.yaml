@@ -1,0 +1,9 @@
+homepage: https://github.com/hardik05/Damn_Vulnerable_C_Program
+language: c
+fuzzing_engines:
+  - libfuzzer
+sanitizers:
+  - address
+  - undefined
+main_repo: https://github.com/hardik05/Damn_Vulnerable_C_Program
+# (optional) add main_repo, contacts, sanitizers later
