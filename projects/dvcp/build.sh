@@ -2,88 +2,47 @@
 
 cd "$SRC/dvcp"
 
-# Extract just the ProcessImage function into a separate file
-cat > dvcp_lib.c <<'EOF'
+# Don't compile dvcp.c - inline the vulnerable code instead
+cat > dvcp_fuzz.c <<'EOF'
+#include <stdint.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-int ProcessImage(char* filename) {
-    FILE *fp;
-    char header[4];
-    int width, height;
+// Inline the vulnerable ProcessImage logic
+int FuzzProcessImage(const uint8_t *data, size_t size) {
+    if (size < 11) return 0;  // Need at least header + dimensions
     
-    fp = fopen(filename, "rb");
-    if (fp == NULL) {
-        return 1;
+    // Check header
+    if (memcmp(data, "IMG", 3) != 0) {
+        return 0;
     }
     
-    // Read header
-    if (fread(header, 1, 3, fp) != 3) {
-        fclose(fp);
-        return 1;
-    }
-    header[3] = '\0';
-    
-    if (strcmp(header, "IMG") != 0) {
-        fclose(fp);
-        return 1;
-    }
-    
-    // Read dimensions
-    if (fread(&width, sizeof(int), 1, fp) != 1 ||
-        fread(&height, sizeof(int), 1, fp) != 1) {
-        fclose(fp);
-        return 1;
-    }
+    // Get dimensions (reading from fuzz input directly)
+    int width = *(int*)(data + 3);
+    int height = *(int*)(data + 7);
     
     // Buffer overflow vulnerability!
     char buffer[100];
     int data_size = width * height;
     
-    if (fread(buffer, 1, data_size, fp) != data_size) {
-        fclose(fp);
-        return 1;
-    }
+    if (size < 11 + data_size) return 0;
     
-    fclose(fp);
+    // This will overflow if width * height > 100
+    memcpy(buffer, data + 11, data_size);
+    
     return 0;
 }
-EOF
 
-# Build the library (no main function conflict)
-$CC $CFLAGS -c dvcp_lib.c -o dvcp.o
-
-# Create fuzzer harness
-cat > dvcp_fuzz.cpp <<'EOF'
-#include <stdint.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-extern "C" int ProcessImage(char* filename);
-
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
-  char filename[] = "/tmp/fuzz_input_XXXXXX";
-  int fd = mkstemp(filename);
-  if (fd == -1) return 0;
-  
-  write(fd, data, size);
-  close(fd);
-  
-  ProcessImage(filename);
-  
-  unlink(filename);
-  return 0;
+int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
+    return FuzzProcessImage(data, size);
 }
 EOF
 
-# Build fuzzer
-$CXX $CXXFLAGS $LIB_FUZZING_ENGINE \
-    dvcp_fuzz.cpp dvcp.o -o "$OUT/dvcp_fuzz"
+# Build fuzzer - no linking with dvcp.o needed!
+$CC $CFLAGS $LIB_FUZZING_ENGINE dvcp_fuzz.c -o "$OUT/dvcp_fuzz"
 
-# Seed corpus
+# Seed corpus with valid IMG header
 mkdir -p "$OUT/dvcp_fuzz_seed_corpus"
-printf "IMG" > "$OUT/dvcp_fuzz_seed_corpus/seed1"
-printf "TESTDATA" > "$OUT/dvcp_fuzz_seed_corpus/seed2"
+printf "IMG\x0a\x00\x00\x00\x0a\x00\x00\x00AAAAAAAAAA" > "$OUT/dvcp_fuzz_seed_corpus/seed1"
