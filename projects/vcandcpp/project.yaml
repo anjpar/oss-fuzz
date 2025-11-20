@@ -1,0 +1,11 @@
+homepage: https://github.com/anjpar/vulnerable-c-and-cpp 
+language: c
+fuzzing_engines:
+  - libfuzzer
+sanitizers:
+  - address
+  - undefined
+  - memory
+main_repo: https://github.com/anjpar/vulnerable-c-and-cpp 
+file_github_issue: false
+# (optional) add main_repo, contacts, sanitizers later
