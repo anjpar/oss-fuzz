@@ -20,5 +20,5 @@ RUN apt-get update && apt-get install -y make autoconf automake libtool
 # Clone the vulnerable C program repository
 RUN git clone --depth 1 https://github.com/anjpar/dvcp-safe-and-vulnerable.git dvcp
 
-WORKDIR dvcp
-COPY build.sh $SRC/
+WORKDIR $SRC/dvcp
+COPY build.sh dvcp_fuzz.c SRC/
