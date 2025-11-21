@@ -100,8 +100,8 @@ int FuzzProcessImage(const uint8_t *data, size_t size) {
     }
     
     // VULNERABILITY: Out-of-bounds read (OOBR) - heap
-    if (size3 < size3) {  // This will access out of bounds
-        char OOBR_heap = buff4[size3];
+    if (size3 > 0) {  // Access one past the allocation
+        volatile char OOBR_heap = buff4[size3];
         (void)OOBR_heap;
     }
 
