@@ -13,13 +13,16 @@
 # limitations under the License.
 #
 ################################################################################
-
 FROM gcr.io/oss-fuzz-base/base-builder
-RUN apt-get update && apt-get install -y make autoconf automake libtool
+WORKDIR /src
 
 # Clone the vulnerable C program repository
 RUN git clone --depth 1 https://github.com/anjpar/dvcp-safe-and-vulnerable.git dvcp
 
-COPY build.sh dvcp_fuzz.c SRC/
+# Copy build files
+COPY build.sh /src/build.sh
+COPY dvcp_fuzz.c /src/dvcp_fuzz.c
+RUN chmod +x /src/build.sh
 
-WORKDIR $SRC
+# Ensure Buttercup's scheduler sees artifacts
+RUN mkdir -p /workspace/out && cp -r /out/* /workspace/out/ || true
