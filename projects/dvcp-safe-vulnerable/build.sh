@@ -1,23 +1,15 @@
 #!/bin/bash -eu
 
-# Instead of compiling dvcp.c, just compile ProcessImage as a separate unit
-# Extract just the ProcessImage function
-$CC $CFLAGS -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -c -x c - -o $SRC/dvcp_funcs.o << 'DVCP_CODE'
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <limits.h>
+# Compile dvcp.c with FUZZING_BUILD flag to exclude main()
+$CC $CFLAGS -DFUZZING_BUILD -c $SRC/dvcp/dvcp.c -o $SRC/dvcp.o
 
-// Copy just the Image struct and helper functions from dvcp.c
-// Exclude the main() function
-// Include the actual dvcp.c content here without main()
-DVCP_CODE
-
-# Build the fuzzer
+# Build the fuzzer and link with dvcp.o
 $CC $CFLAGS $LIB_FUZZING_ENGINE \
+    -I$SRC/dvcp \
     $SRC/dvcp_fuzz_linked.c \
-    $SRC/dvcp_funcs.o \
+    $SRC/dvcp.o \
     -o $OUT/dvcp_fuzz
 
-mkdir -p $OUT/dvcp_fuzz_seed_corpus  
+# Create seed corpus
+mkdir -p $OUT/dvcp_fuzz_seed_corpus
 echo -ne "IMG\x00\x01\x00\x00\x00\x01\x00\x00\x00AAAAAAAAAA" > $OUT/dvcp_fuzz_seed_corpus/seed1
