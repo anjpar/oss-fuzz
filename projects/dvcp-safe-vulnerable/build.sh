@@ -6,7 +6,7 @@ $CC $CFLAGS -DFUZZING_BUILD -c $SRC/dvcp/dvcp.c -o $SRC/dvcp.o
 # Build the fuzzer and link with dvcp.o
 $CC $CFLAGS $LIB_FUZZING_ENGINE \
     -I$SRC/dvcp \
-    $SRC/dvcp_fuzz_linked.c \
+    $SRC/dvcp/contrib/oss-fuzz/dvcp_fuzz_linked.c \
     $SRC/dvcp.o \
     -o $OUT/dvcp_fuzz
 
