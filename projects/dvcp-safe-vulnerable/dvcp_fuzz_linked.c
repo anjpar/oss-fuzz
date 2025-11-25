@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>     // For write, close, unlink
+#include <fcntl.h>      // For mkstemp
 
 // Declare the function from dvcp.c
 int ProcessImage(char* filename);
