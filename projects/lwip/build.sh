@@ -6,30 +6,41 @@ cd $SRC/lwip/test/fuzz
 CC=clang CFLAGS="$CFLAGS -O1 -fsanitize=fuzzer-no-link,address,undefined -Wno-error" make clean
 CC=clang CFLAGS="$CFLAGS -O1 -fsanitize=fuzzer-no-link,address,undefined -Wno-error" make liblwipapps.a liblwipcommon.a
 
-# Compile fuzz_common.o separately
+# Compile fuzz_common.o and stubs
 $CC $CFLAGS -O1 -fsanitize=fuzzer-no-link,address,undefined -Wno-error \
     -I../../src/include -I../../contrib/ports/unix/port/include -I. \
     -c fuzz_common.c -o fuzz_common.o
 
-# Build fuzzer 1: SINGLE mode
-$CXX $CXXFLAGS $LIB_FUZZING_ENGINE \
-    -fsanitize=address,undefined \
+$CC $CFLAGS -O1 -fsanitize=fuzzer-no-link,address,undefined -Wno-error \
     -I../../src/include -I../../contrib/ports/unix/port/include -I. \
-    fuzz_lwip_libfuzzer.c fuzz_common.o lwip_fuzzer_stubs.c \
+    -c lwip_fuzzer_stubs.c -o lwip_fuzzer_stubs.o
+
+# Compile each fuzzer to .o first
+$CC $CFLAGS -O1 -fsanitize=fuzzer-no-link,address,undefined -Wno-error \
+    -I../../src/include -I../../contrib/ports/unix/port/include -I. \
+    -c fuzz_lwip_libfuzzer.c -o fuzz_lwip_libfuzzer.o
+
+$CC $CFLAGS -O1 -fsanitize=fuzzer-no-link,address,undefined -Wno-error \
+    -I../../src/include -I../../contrib/ports/unix/port/include -I. \
+    -c fuzz_lwip_libfuzzer2.c -o fuzz_lwip_libfuzzer2.o
+
+$CC $CFLAGS -O1 -fsanitize=fuzzer-no-link,address,undefined -Wno-error \
+    -I../../src/include -I../../contrib/ports/unix/port/include -I. \
+    -c fuzz_lwip_libfuzzer3.c -o fuzz_lwip_libfuzzer3.o
+
+# Link fuzzer 1
+$CXX $CXXFLAGS $LIB_FUZZING_ENGINE -fsanitize=address,undefined \
+    fuzz_lwip_libfuzzer.o fuzz_common.o lwip_fuzzer_stubs.o \
     liblwipapps.a liblwipcommon.a -lm -o $OUT/fuzz_lwip_single
 
-# Build fuzzer 2: MULTIPACKET mode
-$CXX $CXXFLAGS $LIB_FUZZING_ENGINE \
-    -fsanitize=address,undefined \
-    -I../../src/include -I../../contrib/ports/unix/port/include -I. \
-    fuzz_lwip_libfuzzer2.c fuzz_common.o lwip_fuzzer_stubs.c \
+# Link fuzzer 2
+$CXX $CXXFLAGS $LIB_FUZZING_ENGINE -fsanitize=address,undefined \
+    fuzz_lwip_libfuzzer2.o fuzz_common.o lwip_fuzzer_stubs.o \
     liblwipapps.a liblwipcommon.a -lm -o $OUT/fuzz_lwip_multipacket
 
-# Build fuzzer 3: MULTIPACKET_TIME with all apps
-$CXX $CXXFLAGS $LIB_FUZZING_ENGINE \
-    -fsanitize=address,undefined \
-    -I../../src/include -I../../contrib/ports/unix/port/include -I. \
-    fuzz_lwip_libfuzzer3.c fuzz_common.o lwip_fuzzer_stubs.c \
+# Link fuzzer 3
+$CXX $CXXFLAGS $LIB_FUZZING_ENGINE -fsanitize=address,undefined \
+    fuzz_lwip_libfuzzer3.o fuzz_common.o lwip_fuzzer_stubs.o \
     liblwipapps.a liblwipcommon.a -lm -o $OUT/fuzz_lwip_full
 
 # Copy seed corpus
