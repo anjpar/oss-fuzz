@@ -1,0 +1,9 @@
+homepage: "https://savannah.nongnu.org/projects/lwip/"
+language: c
+primary_contact: "lwip-users@nongnu.org"
+main_repo: "https://github.com/anjpar/lwip.git"
+sanitizers:
+  - address
+  - undefined
+fuzzing_engines:
+  - libfuzzer
